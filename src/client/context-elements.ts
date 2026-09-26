@@ -1,0 +1,39 @@
+/** Keep the compatibility bridge local to its composer. RC2 places the meter
+ * in the dock outside the card and portals its popup directly to body. */
+export function contextRoot(anchor: HTMLElement): HTMLElement | undefined {
+  return anchor.closest<HTMLElement>('[data-composer-card]')?.parentElement
+    ?? anchor.closest<HTMLElement>('[data-slot="conversation.input.right"]')?.parentElement
+    ?? undefined;
+}
+
+export function contextRing(root: HTMLElement): HTMLButtonElement | undefined {
+  const matches = [...root.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"]')]
+    .filter(button => button.querySelector('svg[viewBox="0 0 14 14"]')?.querySelectorAll('circle').length === 2);
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+function isContextPanel(panel: HTMLElement): boolean {
+  const header = panel.firstElementChild;
+  return panel.getAttribute('role') === 'dialog' && header?.children.length === 4
+    && /^\d+%$/.test(header.children[1]?.textContent ?? '')
+    && (header.children[3]?.textContent ?? '').includes('/')
+    && Boolean(header.nextElementSibling);
+}
+
+export function contextPanel(ring?: HTMLButtonElement): HTMLElement | undefined {
+  if (!ring || ring.getAttribute('aria-expanded') !== 'true') return;
+  const controlled = ring.getAttribute('aria-controls');
+  const linked = controlled ? ring.ownerDocument.getElementById(controlled) : null;
+  if (linked && isContextPanel(linked)) return linked;
+  const local = ring.parentElement?.querySelector<HTMLElement>('[role="dialog"]');
+  if (local && isContextPanel(local)) return local;
+  // Upstream provides no aria-controls on the portalled popup. Only attach
+  // when both the open meter and matching body portal are unambiguous; never
+  // steal another conversation's popup or a model/settings dialog.
+  const doc = ring.ownerDocument;
+  const openRings = [...doc.querySelectorAll<HTMLButtonElement>('button[aria-haspopup="dialog"][aria-expanded="true"]')]
+    .filter(button => button.querySelector('svg[viewBox="0 0 14 14"]')?.querySelectorAll('circle').length === 2);
+  if (openRings.length !== 1 || openRings[0] !== ring) return;
+  const panels = [...doc.body.children].filter((element): element is HTMLElement => element instanceof HTMLElement && isContextPanel(element));
+  return panels.length === 1 ? panels[0] : undefined;
+}

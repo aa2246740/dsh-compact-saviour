@@ -1,0 +1,1 @@
+{"version":3,"file":"meter-bridge.d.ts","sourceRoot":"","sources":["../../../src/client/meter-bridge.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,WAAW,EAAE,MAAM,cAAc,CAAC;AAUhD;qFACqF;AACrF,qBAAa,WAAW;IACtB,OAAO,CAAC,KAAK,CAAuC;IACpD,OAAO,CAAC,KAAK;IASb,OAAO,CAAC,IAAI;IAKZ,OAAO,CAAC,IAAI;IAGZ,OAAO;IAIP,KAAK,CAAC,IAAI,EAAE,iBAAiB,GAAG,SAAS,EAAE,OAAO,CAAC,EAAE,WAAW;CA6BjE"}

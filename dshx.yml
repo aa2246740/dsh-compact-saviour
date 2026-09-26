@@ -1,0 +1,16 @@
+id: dsh-compact-saviour
+entry: src/dsh-compact-saviour.ts
+marker: "[my-plugins/dsh-compact-saviour] loaded"
+kind: client
+profile: web
+hotReload:
+  artifacts:
+    - lib/dsh-compact-saviour.js
+    - lib/client.js
+    - src/dsh-compact-saviour.ts
+    - src/controller.ts
+    - src/compress.ts
+    - src/summary-types.ts
+    - src/shared.ts
+    - src/pressure.ts
+    - src/vendor/region.ts
