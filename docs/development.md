@@ -2,7 +2,7 @@
 
 用户安装请看 [README](../README.md#安装)。本页只面向修改源码的贡献者；这里的构建工具不参与普通插件安装。
 
-1. 准备与目标版本匹配、已安装依赖的 DeepSeek Harness 0.2.0-rc.1 checkout，以及外部客户端构建适配器 `tools/dshx/src/client-build.js`。适配器生成官方 lazy-CJS 客户端格式。DSHX 0.9.2 使用 git 分支 `cursor/harness-020-rc1-ce8f`（`ea2c8777644c27646b280f675aac7c712cf6748c`），不要用 npm 上的旧 dshx。
+1. 准备与目标版本匹配、已安装依赖的 DeepSeek Harness 0.2.0-rc.2 checkout，以及外部客户端构建适配器 `tools/dshx/src/client-build.js`。适配器生成官方 lazy-CJS 客户端格式。DSHX 0.9.2 使用 git 分支 `cursor/harness-020-rc1-ce8f`（`ea2c8777644c27646b280f675aac7c712cf6748c`），不要用 npm 上的旧 dshx。
 2. 在本插件目录链接开发依赖并构建；所有输出只写入本插件，官方 Harness 只读。
 
 ```sh

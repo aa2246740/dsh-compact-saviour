@@ -1,10 +1,10 @@
 # dsh-compact-saviour
 
-给 DeepSeek Harness 增加独立模型自动压缩、长按压缩和一键手动压缩。当前适配的 Host：DSH `0.2.0-rc.1`。
+给 DeepSeek Harness 增加独立模型自动压缩、长按压缩和一键手动压缩。当前适配的 Host：DSH `0.2.0-rc.2`。
 
 ## 安装
 
-需要 DeepSeek Harness **0.2.0-rc.1**（`@deepseek-ai/dsh-*` peer `>=0.2.0-rc.1 <0.2.1`，与 DSHX 写在 `@deepseek-ai/dsh` 上的范围相同）。这是符合官方 `dsh.bundle.patch` 约定的外部插件，仓库和 Release 安装包都包含编译好的 `lib/`。**安装不需要 dshx、Creator Mode、Harness 源码或本地构建。** 已发布的 `v0.2.5` 仍是 `0.1.7-rc.2` 版本；`v0.2.6` 标签尚未创建。
+需要 DeepSeek Harness **0.2.0-rc.2**（`@deepseek-ai/dsh-*` peer `>=0.2.0-rc.1 <0.2.1`，与 DSHX 写在 `@deepseek-ai/dsh` 上的范围相同）。这是符合官方 `dsh.bundle.patch` 约定的外部插件，仓库和 Release 安装包都包含编译好的 `lib/`。**安装不需要 dshx、Creator Mode、Harness 源码或本地构建。** 已发布的 `v0.2.5` 仍是 `0.1.7-rc.2` 版本；`v0.2.6` 标签尚未创建。
 
 ### 桌面应用（推荐）
 
@@ -31,7 +31,7 @@ dsh plugin --profile web add github:aa2246740/dsh-compact-saviour#v0.2.6
 没有全局 `dsh` 命令时：
 
 ```sh
-npx @deepseek-ai/dsh@0.2.0-rc.1 plugin --profile web add github:aa2246740/dsh-compact-saviour#v0.2.6
+npx @deepseek-ai/dsh@0.2.0-rc.2 plugin --profile web add github:aa2246740/dsh-compact-saviour#v0.2.6
 ```
 
 CLI 路径需要 Node.js 24+、Git 及 PATH 中的 pnpm。它把包写入选定 profile；首次新增 bundle 后，按官方安装提示由原来的启动方式重新打开 Host，再刷新 Web 页面。不要在同一个 DSH_HOME 上另开一个 Host。
