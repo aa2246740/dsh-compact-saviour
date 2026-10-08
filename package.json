@@ -1,6 +1,6 @@
 {
   "name": "dsh-compact-saviour",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Dedicated-model compaction rescue and manual compaction in the native context popup",
   "type": "module",
   "license": "MIT",
