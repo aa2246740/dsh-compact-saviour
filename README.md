@@ -1,54 +1,60 @@
 # dsh-compact-saviour
 
+[![npm version](https://img.shields.io/npm/v/dsh-compact-saviour)](https://www.npmjs.com/package/dsh-compact-saviour)
+
 给 DeepSeek Harness 增加独立模型自动压缩、长按压缩和一键手动压缩。当前适配的 Host：DSH `0.2.0-rc.2`。
 
-## 安装
+## 安装 / 更新
 
-需要 DeepSeek Harness **0.2.0-rc.2**（`@deepseek-ai/dsh-*` peer `>=0.2.0-rc.1 <0.2.1`，与 DSHX 写在 `@deepseek-ai/dsh` 上的范围相同）。这是符合官方 `dsh.bundle.patch` 约定的外部插件，仓库和 Release 安装包都包含编译好的 `lib/`。**安装不需要 dshx、Creator Mode、Harness 源码或本地构建。** 已发布的 `v0.2.5` 仍是 `0.1.7-rc.2` 版本；`v0.2.6` 标签尚未创建。
+需要 DeepSeek Harness **0.2.0-rc.2**（`@deepseek-ai/dsh-*` peer `>=0.2.0-rc.1 <0.2.1`，与 DSHX 写在 `@deepseek-ai/dsh` 上的范围相同）。这是符合官方 `dsh.bundle.patch` 约定的外部插件，npm 包包含编译好的 `lib/`。**安装不需要 dshx、Creator Mode、Harness 源码或本地构建。**
 
-### 桌面应用（推荐）
+### 在 DeepSeek Harness 网页版或桌面端安装
 
-1. 打开 DeepSeek Harness / DSH Studio 的 **插件** 页面，选择 **添加插件**。
-2. 在 **包名或地址** 中填入下面这一行，按官方安装向导继续：
+在 **添加插件** 向导的搜索框中填入 `dsh-compact-saviour`，点击 **Install**：
 
-   ```text
-   github:aa2246740/dsh-compact-saviour#v0.2.6
-   ```
+![Add plugin wizard](https://raw.githubusercontent.com/aa2246740/dsh-compact-saviour/main/docs/add-plugin-wizard.png)
 
-3. 安装到当前应用所用的 profile，按安装结果给出的提示完成启用或重新打开应用。
-4. 打开 **设置 → Compact Saviour**，选择已经配置的压缩模型并保存。
+安装到当前应用所用的 profile，按安装结果给出的提示完成启用或重新打开应用。然后打开 **设置 → Compact Saviour**，选择已经配置的压缩模型并保存。
 
-桌面应用通常使用 `desktop` profile。下面的 `--profile web` 命令只针对 Web Host，不会替桌面应用安装插件。
+### 使用 `dsh` 命令行安装
 
-### Web Host（官方 CLI）
+从 [DeepSeek Harness](https://www.npmjs.com/package/@deepseek-ai/dsh) 安装 [`dsh-compact-saviour`](https://www.npmjs.com/package/dsh-compact-saviour) 插件：
 
-已安装官方 `dsh` CLI 时：
+```sh
+dsh plugin --profile web add dsh-compact-saviour
+```
+
+更新 `dsh-compact-saviour` 插件：
+
+```sh
+dsh plugin --profile web update dsh-compact-saviour@latest
+```
+
+然后用 `dsh web` 启动 Web 界面。无需构建、无需重启。
+
+没有全局 `dsh` 命令时：`npx @deepseek-ai/dsh@0.2.0-rc.2 plugin --profile web add dsh-compact-saviour`。
+
+CLI 路径需要 Node.js 24+、Git 及 PATH 中的 pnpm。它只写入 `web` profile，不能修改桌面应用的 profile；桌面端请使用上面的应用内“添加插件”向导。不要在同一个 DSH_HOME 上另开一个 Host。
+
+### 高级安装方式
+
+固定到某个 GitHub 标签：
 
 ```sh
 dsh plugin --profile web add github:aa2246740/dsh-compact-saviour#v0.2.6
 ```
 
-没有全局 `dsh` 命令时：
-
-```sh
-npx @deepseek-ai/dsh@0.2.0-rc.2 plugin --profile web add github:aa2246740/dsh-compact-saviour#v0.2.6
-```
-
-CLI 路径需要 Node.js 24+、Git 及 PATH 中的 pnpm。它把包写入选定 profile；首次新增 bundle 后，按官方安装提示由原来的启动方式重新打开 Host，再刷新 Web 页面。不要在同一个 DSH_HOME 上另开一个 Host。
-
-### 使用 Release 安装包
-
-`v0.2.6` 尚未打标签、也未上传 Release。已发布的 [v0.2.5 Release](https://github.com/aa2246740/dsh-compact-saviour/releases/tag/v0.2.5) 仍是 `0.1.7-rc.2` 安装包。本分支可用本地目录安装：
+本地目录（开发/本地测试）：
 
 ```sh
 dsh plugin --profile web add file:/path/to/dsh-compact-saviour
 ```
 
-这条路径同样使用官方插件安装器，不需要解压或手动创建软链接。本版本发布在 GitHub，未发布到 npm；不要使用没有 `github:` 前缀的裸包名安装。
+这条路径同样使用官方插件安装器，不需要解压或手动创建软链接。
 
-### 更新与卸载
+### 卸载
 
-更新时在官方插件管理器安装目标版本的 GitHub spec 或 `.tgz`，按结果提示生效。Web CLI 使用同一条 `add` 命令即可指定目标版本。卸载请使用应用插件页面；Web CLI 对应：
+卸载请使用应用插件页面；Web CLI 对应：
 
 ```sh
 dsh plugin --profile web remove dsh-compact-saviour
