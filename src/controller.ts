@@ -12,11 +12,12 @@ import type {} from '@deepseek-ai/dsh-session-projection';
 import { compactSurfaceRegion, selectCompactableRange } from './vendor/region.js';
 import { compress } from './compress.js';
 import { PressureMeter } from './pressure.js';
+import type { CompactionRouteLease, CompactionRouteRegistry } from './routes.js';
 import type { Config, Target, State, JobView } from './shared.js';
 
 type Engine = BasicCompactionEngine;
 interface Binding { engine: Engine; ctx: Context; fiber: Fiber; restore(): void }
-interface Job { view: JobView; pending?: Target; abort?: AbortController; blocked: boolean; work?: Promise<unknown> }
+interface Job { view: JobView; pending?: Target; pendingRoute?: CompactionRouteLease; abort?: AbortController; blocked: boolean; work?: Promise<unknown> }
 const inactive = (): Job => ({ view: { phase: 'idle', message: '', failures: 0 }, blocked: false });
 
 export class Controller {
@@ -24,7 +25,7 @@ export class Controller {
   private jobs = new Map<string, Job>();
   private disposed = false;
   private pressure: PressureMeter;
-  constructor(readonly ctx: Context, readonly settings: SettingsScope<Config>) {
+  constructor(readonly ctx: Context, readonly settings: SettingsScope<Config>, private readonly routes?: CompactionRouteRegistry) {
     this.pressure = new PressureMeter(ctx);
     const scan = () => { if (!this.disposed) this.scan(); };
     ctx.on('internal/status', () => queueMicrotask(scan), { global: true });
@@ -69,7 +70,8 @@ export class Controller {
       const region: Engine['compactRegion'] = async function(this: Engine, start, end, agent, signal) {
         const job = self.job(agent);
         if (job.blocked && self.settings.get().enabled) throw new Error('压缩救援等待用户选择重试或取消。');
-        if (self.direct()) return self.rescue(agent, { engine, ctx: fiber.ctx, fiber, restore() {} }, self.configured(), signal ?? new AbortController().signal, false, { start, end });
+        const route = self.settings.get().enabled ? self.routes?.resolve(agent) : undefined;
+        if (self.direct() || route) return self.rescue(agent, { engine, ctx: fiber.ctx, fiber, restore() {} }, route?.target ?? self.configured(), signal ?? new AbortController().signal, false, { start, end }, undefined, route);
         const generation = agent.session.surface.replaceGeneration;
         const firstEvent = agent.session.seq;
         try {
@@ -91,7 +93,7 @@ export class Controller {
         if (self.job(agent).blocked && self.settings.get().enabled) return null;
         // Prime metadata before the official synchronous pressure check. Failure
         // to resolve it leaves the original check and context-overflow recovery intact.
-        try { await self.pressure.refresh(agent.session, undefined, signal); } catch { if (signal?.aborted) throw signal.reason; }
+        try { await self.pressure.refresh(agent.session, self.current(agent), signal); } catch { if (signal?.aborted) throw signal.reason; }
         return originalIfNeeded.call(this, agent, trigger, signal);
       };
       const now: Engine['compactNow'] = function(this: Engine, agent, signal, sourceCommandId) {
@@ -131,6 +133,8 @@ export class Controller {
   }
   private direct(): boolean { const config = this.settings.get(); return config.enabled && config.mode === 'direct'; }
   current(agent: Agent): Target | undefined {
+    const routed = this.routes?.resolve(agent);
+    if (routed) return routed.context;
     const projection = this.ctx.sessionProjections.stateOf(agent.session, 'modelSelection');
     const target = projection?.pending ?? projection?.lastUsed ?? agent.session.requestHeader()?.config ?? agent.options;
     return target.provider && target.model ? { provider: target.provider, model: target.model, ...(target.reasoningEffort ? { reasoningEffort: String(target.reasoningEffort) } : {}) } : undefined;
@@ -156,15 +160,16 @@ export class Controller {
     const job = this.job(agent);
     if (mode === 'cancel') {
       job.blocked = false;
-      job.pending = undefined; job.abort?.abort(new Error('用户取消压缩。'));
+      job.pending = undefined; job.pendingRoute = undefined; job.abort?.abort(new Error('用户取消压缩。'));
       if (!job.abort) job.view = { phase: 'idle', message: '已取消压缩。', failures: job.view.failures };
       return this.state(id);
     }
     if (job.pending || job.abort) throw new Error('该会话已有压缩任务。');
     this.binding(agent);
-    const target = mode === 'current' ? this.current(agent) : this.configured();
+    const route = this.routes?.resolve(agent);
+    const target = route?.target ?? (mode === 'current' ? this.current(agent) : this.configured());
     if (!target?.provider || !target.model) throw new Error('请先在设置中选择压缩模型。');
-    job.pending = target; job.blocked = false;
+    job.pending = target; job.pendingRoute = route; job.blocked = false;
     job.view = { phase: 'queued', message: agent.status === 'idle' ? '正在准备压缩…' : '已排队，当前模型或工具步骤结束后压缩。', failures: job.view.failures };
     if (agent.status === 'idle') queueMicrotask(() => { void this.runIdle(agent); });
     return this.state(id);
@@ -176,31 +181,35 @@ export class Controller {
     catch (error) {
       // A turn may win admission between the click and maintenance. Keep it queued for pre-step.
       if (agent.status !== 'idle') return;
-      job.pending = undefined; this.fail(job, error);
+      job.pending = undefined; job.pendingRoute = undefined; this.fail(job, error);
     }
   }
   private async runPending(agent: Agent, signal: AbortSignal, idle: boolean): Promise<void> {
-    const job = this.job(agent), target = job.pending;
+    const job = this.job(agent), target = job.pending, route = job.pendingRoute;
     if (!target || this.disposed) return;
-    job.pending = undefined;
-    try { await this.rescue(agent, this.binding(agent), target, signal, idle); }
+    job.pending = undefined; job.pendingRoute = undefined;
+    try { await this.rescue(agent, this.binding(agent), target, signal, idle, undefined, undefined, route); }
     catch (error) { if (!signal.aborted && job.view.phase === 'queued') this.fail(job, error); }
   }
   private fail(job: Job, error: unknown): void {
     job.blocked = true;
     job.view = { ...job.view, phase: 'failed', message: errorChain(error) };
   }
-  private async rescue(agent: Agent, binding: Binding, target: Target, outerSignal: AbortSignal, idle: boolean, selected?: { start: SessionSeq; end: SessionSeq }, sourceCommandId?: CommandId) {
+  private async rescue(agent: Agent, binding: Binding, target: Target, outerSignal: AbortSignal, idle: boolean, selected?: { start: SessionSeq; end: SessionSeq }, sourceCommandId?: CommandId, lease?: CompactionRouteLease) {
     const job = this.job(agent);
     if (job.abort) throw new Error('该会话已有压缩任务。');
     const abort = new AbortController(); job.abort = abort;
-    const signal = AbortSignal.any([outerSignal, abort.signal]);
+    let signal = AbortSignal.any([outerSignal, abort.signal]);
     const work = (async () => {
       try {
         signal.throwIfAborted();
+        const route = lease ?? this.routes?.resolve(agent);
+        if (route) signal = AbortSignal.any([signal, route.signal]);
+        route?.assertCurrent();
+        target = route?.target ?? target;
         if (!target.provider || !target.model) throw new Error('请先在设置 → Compact Saviour 中选择压缩模型。');
         const meter = binding.ctx.tokenMeter;
-        const current = this.current(agent);
+        const current = route?.context ?? this.current(agent);
         const header = agent.session.requestHeader();
         // Reprice retained images for the model selected for the next request.
         const effectiveHeader = header && current ? { ...header, config: { ...header.config, provider: current.provider, model: current.model } } : header;
@@ -215,6 +224,8 @@ export class Controller {
         const beforeTokens = fixed + before.surfaceTokens;
         job.view = { phase: 'running', message: '正在压缩上下文…', failures: job.view.failures, beforeTokens };
         const info = current ? await binding.ctx.llm.resolveModelInfo(current.provider, current.model, signal) : undefined;
+        signal.throwIfAborted(); route?.assertCurrent();
+        if (info && (info.provider !== current?.provider || info.id !== current.model)) throw new Error('上下文模型元数据与实际路由不一致。');
         const contextWindow = info?.context?.contextWindow;
         if (!contextWindow) throw new Error('当前对话模型没有可确认的上下文容量。');
         const room = Math.floor(contextWindow * .75) - fixed - (effectiveHeader?.config.maxTokens ?? info?.defaultMaxTokens ?? 8192);
@@ -229,7 +240,7 @@ export class Controller {
         const summaryBudget = Math.min(6000, maxSummaryTokens);
         const result = await compactSurfaceRegion({
           meter,
-          summarize: (input, owner, abortSignal) => compress(binding.ctx, input, owner, { target, signal: abortSignal ?? signal, summaryBudget, maxSummaryTokens,
+          summarize: (input, owner, abortSignal) => compress(binding.ctx, input, owner, { target, signal: abortSignal ?? signal, summaryBudget, maxSummaryTokens, routeLease: route,
             progress: (completed, total, message) => { job.view = { ...job.view, completed, total, message: message ?? (total === 1 ? '正在生成摘要…' : `正在分块压缩 ${completed}/${total}…`) }; },
           }),
         }, agent.session, range.start, range.end, agent, { owner: idle ? null : 'current-turn', stability: idle ? 'selected-span' : 'whole-surface', ...(sourceCommandId ? { sourceCommandId } : {}), ...(idle ? { flush: async () => { await binding.ctx.sessions.flush(agent.session); } } : {}) }, signal);

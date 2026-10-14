@@ -6,6 +6,9 @@ import type {} from '@deepseek-ai/dsh-settings';
 import type {} from '@deepseek-ai/dsh-llm';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Controller } from './controller.js';
+import { CompactionRouteRegistry } from './routes.js';
+export { CompactionRouteRegistry } from './routes.js';
+export type { CompactionRouteSnapshot, CompactionRouteLease } from './routes.js';
 import type { Config as Settings } from './shared.js';
 
 export const name = 'dsh-compact-saviour';
@@ -41,7 +44,10 @@ export function apply(ctx: Context, config: { [K in keyof Settings]-?: Volatile<
     replace: (value: Settings) => ctx.settings.update('dsh-compact-saviour', value),
   };
   ctx.effect(() => ctx.settings.configure({ auto: false }));
-  const controller = new Controller(ctx, settings);
+  const routes = new CompactionRouteRegistry();
+  ctx.provide('compactionRoutes', routes);
+  ctx.effect(() => () => routes.close());
+  const controller = new Controller(ctx, settings, routes);
   // Versioned route also recovers a running 0.1.0 Host whose unowned legacy
   // route cannot be released through the public WebServer API. All new route
   // registrations are fiber-owned and disappear before replacement on HMR.

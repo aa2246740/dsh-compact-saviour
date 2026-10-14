@@ -4,15 +4,17 @@ interface SettingsScope<T> {
     get(): T;
     replace(value: T): Promise<void>;
 }
+import type { CompactionRouteRegistry } from './routes.js';
 import type { Config, Target, State } from './shared.js';
 export declare class Controller {
     readonly ctx: Context;
     readonly settings: SettingsScope<Config>;
+    private readonly routes?;
     private bindings;
     private jobs;
     private disposed;
     private pressure;
-    constructor(ctx: Context, settings: SettingsScope<Config>);
+    constructor(ctx: Context, settings: SettingsScope<Config>, routes?: CompactionRouteRegistry | undefined);
     private job;
     private scan;
     private binding;
