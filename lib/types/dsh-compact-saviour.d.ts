@@ -1,5 +1,7 @@
 import type { Context, Volatile } from '@deepseek-ai/cordis';
 import z from '@deepseek-ai/schemastery';
+export { CompactionRouteRegistry } from './routes.js';
+export type { CompactionRouteSnapshot, CompactionRouteLease } from './routes.js';
 import type { Config as Settings } from './shared.js';
 export declare const name = "dsh-compact-saviour";
 export declare const inject: string[];

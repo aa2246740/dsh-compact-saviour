@@ -4,7 +4,7 @@
 
 ## 安装
 
-需要 DeepSeek Harness **0.2.0-rc.2**（`@deepseek-ai/dsh-*` peer `>=0.2.0-rc.1 <0.2.1`，与 DSHX 写在 `@deepseek-ai/dsh` 上的范围相同）。这是符合官方 `dsh.bundle.patch` 约定的外部插件，仓库和 Release 安装包都包含编译好的 `lib/`。**安装不需要 dshx、Creator Mode、Harness 源码或本地构建。** 已发布的 `v0.2.5` 仍是 `0.1.7-rc.2` 版本；`v0.2.6` 标签尚未创建。
+需要 DeepSeek Harness **0.2.0-rc.2**（`@deepseek-ai/dsh-*` peer `>=0.2.0-rc.1 <0.2.1`，与 DSHX 写在 `@deepseek-ai/dsh` 上的范围相同）。这是符合官方 `dsh.bundle.patch` 约定的外部插件，仓库和 Release 安装包都包含编译好的 `lib/`。**安装不需要 dshx、Creator Mode、Harness 源码或本地构建。** 本次正式版本为 `0.2.8`，提供 npm 包和 GitHub Release 安装包。
 
 ### 桌面应用（推荐）
 
@@ -12,7 +12,7 @@
 2. 在 **包名或地址** 中填入下面这一行，按官方安装向导继续：
 
    ```text
-   github:aa2246740/dsh-compact-saviour#v0.2.6
+   dsh-compact-saviour@0.2.8
    ```
 
 3. 安装到当前应用所用的 profile，按安装结果给出的提示完成启用或重新打开应用。
@@ -25,30 +25,30 @@
 已安装官方 `dsh` CLI 时：
 
 ```sh
-dsh plugin --profile web add github:aa2246740/dsh-compact-saviour#v0.2.6
+dsh plugin --profile web add dsh-compact-saviour@0.2.8
 ```
 
 没有全局 `dsh` 命令时：
 
 ```sh
-npx @deepseek-ai/dsh@0.2.0-rc.2 plugin --profile web add github:aa2246740/dsh-compact-saviour#v0.2.6
+npx @deepseek-ai/dsh@0.2.0-rc.2 plugin --profile web add dsh-compact-saviour@0.2.8
 ```
 
-CLI 路径需要 Node.js 24+、Git 及 PATH 中的 pnpm。它把包写入选定 profile；首次新增 bundle 后，按官方安装提示由原来的启动方式重新打开 Host，再刷新 Web 页面。不要在同一个 DSH_HOME 上另开一个 Host。
+CLI 路径需要 Node.js 24+ 及 PATH 中的 pnpm；Git spec 另需 Git。它把包写入选定 profile；按官方安装器的生效结果继续，只有提示需要重启时才用原启动方式重新打开 Host。不要在同一个 DSH_HOME 上另开一个 Host。
 
 ### 使用 Release 安装包
 
-`v0.2.6` 尚未打标签、也未上传 Release。已发布的 [v0.2.5 Release](https://github.com/aa2246740/dsh-compact-saviour/releases/tag/v0.2.5) 仍是 `0.1.7-rc.2` 安装包。本分支可用本地目录安装：
+从 [v0.2.8 Release](https://github.com/aa2246740/dsh-compact-saviour/releases/tag/v0.2.8) 下载 `.tgz`，在官方插件管理器中选择该安装包。开发时也可使用本地目录：
 
 ```sh
 dsh plugin --profile web add file:/path/to/dsh-compact-saviour
 ```
 
-这条路径同样使用官方插件安装器，不需要解压或手动创建软链接。本版本发布在 GitHub，未发布到 npm；不要使用没有 `github:` 前缀的裸包名安装。
+这条路径同样使用官方插件安装器，不需要解压或手动创建软链接。npm 安装可使用上面的固定版本包名。
 
 ### 更新与卸载
 
-更新时在官方插件管理器安装目标版本的 GitHub spec 或 `.tgz`，按结果提示生效。Web CLI 使用同一条 `add` 命令即可指定目标版本。卸载请使用应用插件页面；Web CLI 对应：
+更新时在官方插件管理器安装目标版本的 npm 包、GitHub spec 或 `.tgz`，按结果提示生效。Web CLI 使用同一条 `add` 命令即可指定目标版本。卸载请使用应用插件页面；Web CLI 对应：
 
 ```sh
 dsh plugin --profile web remove dsh-compact-saviour
@@ -104,6 +104,12 @@ dsh plugin --profile web remove dsh-compact-saviour
 0.2.5 已在 DSH Studio 0.1.7-rc.2 的真实窗口确认手动入口恢复，并验证客户端热更新；本轮修复测试没有调用模型、没有压缩用户历史，不代表重新测量了摘要质量或模型时延。详细记录见 [ACCEPTANCE.md](ACCEPTANCE.md)。
 
 摘要是有损压缩，可能漏掉细节；原始日志始终保留。官方上下文弹窗暂未提供扩展插槽，本插件使用有边界的 DOM 兼容层。未来 DSH 更改弹窗结构时需要重新验收，不承诺未测试版本兼容。
+
+## 与会话模型路由插件协作
+
+插件通过可选公共服务 `compactionRoutes`（`apiVersion: 1`）接收会话的真实上下文模型、压缩模型、reasoning effort、输出上限和路由修订。Fusion 会提供当前会话冻结的路由；其他会话仍使用 Saviour 自己的设置。自动辅助关闭时不接管自动压缩，手动压缩仍可用。
+
+容量解析、分块预算和最终 `llm.stream` 请求使用同一路由快照。请求输出不超过已预留上限。路由变更或注册插件卸载后，旧快照失效；卸载也取消进行中的压缩。取消或失效不会提交摘要。该服务在外部插件内实现，不改动 Harness 核心。
 
 ## 许可证
 

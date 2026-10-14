@@ -13,4 +13,5 @@ hotReload:
     - src/summary-types.ts
     - src/shared.ts
     - src/pressure.ts
+    - src/routes.ts
     - src/vendor/region.ts

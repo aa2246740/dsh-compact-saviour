@@ -14,7 +14,7 @@ test('chunks preserve multilingual source exactly, including a single huge line'
 function fixture(text: string, finish = 'stop') {
   const requests: any[] = [];
   const ctx = { llm: {
-    resolveModelInfo: async () => ({ context: { contextWindow: 64000 }, reasoning: { efforts: [{ id: 'low' }] } }),
+    resolveModelInfo: async (provider: string, model: string) => ({ provider, id: model, name: model, context: { contextWindow: 64000 }, reasoning: { efforts: [{ id: 'low' }] } }),
     async *stream(request: any) {
       requests.push(request);
       yield { type: 'block-start', index: 0, blockType: 'text' };
