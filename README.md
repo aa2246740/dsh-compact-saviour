@@ -1,10 +1,10 @@
 # dsh-compact-saviour
 
-给 DeepSeek Harness 增加独立模型自动压缩、长按压缩和一键手动压缩。当前适配的 Host：DSH `0.2.0-rc.2`。
+给 DeepSeek Harness 增加独立模型自动压缩、长按压缩和一键手动压缩。当前适配的 Host：DSH `0.2.1-rc.2`。
 
 ## 安装
 
-需要 DeepSeek Harness **0.2.0-rc.2**（`@deepseek-ai/dsh-*` peer `>=0.2.0-rc.1 <0.2.1`，与 DSHX 写在 `@deepseek-ai/dsh` 上的范围相同）。这是符合官方 `dsh.bundle.patch` 约定的外部插件，仓库和 Release 安装包都包含编译好的 `lib/`。**安装不需要 dshx、Creator Mode、Harness 源码或本地构建。** 本次正式版本为 `0.2.8`，提供 npm 包和 GitHub Release 安装包。
+需要 DeepSeek Harness **0.2.1-rc.2**（`@deepseek-ai/dsh-*` peer 与 `engines.dsh` 均为 `>=0.2.1-rc.1 <0.2.2`，与 DSHX 写在 `@deepseek-ai/dsh` 上的范围相同）。这是符合官方 `dsh.bundle.patch` 约定的外部插件，仓库和 Release 安装包都包含编译好的 `lib/`。**安装不需要 dshx、Creator Mode、Harness 源码或本地构建。** 本次正式版本为 `0.2.9`，提供 npm 包和 GitHub Release 安装包。
 
 ### 桌面应用（推荐）
 
@@ -12,7 +12,7 @@
 2. 在 **包名或地址** 中填入下面这一行，按官方安装向导继续：
 
    ```text
-   dsh-compact-saviour@0.2.8
+   dsh-compact-saviour@0.2.9
    ```
 
 3. 安装到当前应用所用的 profile，按安装结果给出的提示完成启用或重新打开应用。
@@ -25,20 +25,20 @@
 已安装官方 `dsh` CLI 时：
 
 ```sh
-dsh plugin --profile web add dsh-compact-saviour@0.2.8
+dsh plugin --profile web add dsh-compact-saviour@0.2.9
 ```
 
 没有全局 `dsh` 命令时：
 
 ```sh
-npx @deepseek-ai/dsh@0.2.0-rc.2 plugin --profile web add dsh-compact-saviour@0.2.8
+npx @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile web add dsh-compact-saviour@0.2.9
 ```
 
 CLI 路径需要 Node.js 24+ 及 PATH 中的 pnpm；Git spec 另需 Git。它把包写入选定 profile；按官方安装器的生效结果继续，只有提示需要重启时才用原启动方式重新打开 Host。不要在同一个 DSH_HOME 上另开一个 Host。
 
 ### 使用 Release 安装包
 
-从 [v0.2.8 Release](https://github.com/aa2246740/dsh-compact-saviour/releases/tag/v0.2.8) 下载 `.tgz`，在官方插件管理器中选择该安装包。开发时也可使用本地目录：
+从 [v0.2.9 Release](https://github.com/aa2246740/dsh-compact-saviour/releases/tag/v0.2.9) 下载 `.tgz`，在官方插件管理器中选择该安装包。开发时也可使用本地目录：
 
 ```sh
 dsh plugin --profile web add file:/path/to/dsh-compact-saviour
