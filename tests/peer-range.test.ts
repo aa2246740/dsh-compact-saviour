@@ -9,7 +9,7 @@ const REJECT = ['0.2.0-rc.2', '0.2.0', '0.2.0-alpha', '0.2.0-alpha.1', '0.2.1-al
 
 test('Harness peers use >=0.2.1-rc.1 <0.2.2', () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-  assert.equal(pkg.version, '0.2.8');
+  assert.equal(pkg.version, '0.2.9');
   assert.equal(semver.satisfies('0.2.1-rc.5', RANGE), true);
   const peers = Object.entries(pkg.peerDependencies).filter(([name]) => name.startsWith('@deepseek-ai/dsh'));
   assert.ok(peers.length >= 17);
