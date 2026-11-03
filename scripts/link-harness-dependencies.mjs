@@ -1,8 +1,8 @@
-import { existsSync, mkdirSync, symlinkSync, realpathSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { createRequire } from 'node:module';
-const root = resolve(process.argv[2] || '');
-if (!process.argv[2] || !existsSync(join(root, 'tools/dshx/src/client-build.js'))) throw new Error('Pass a prepared Harness checkout.');
+const root = resolve(process.argv[2] || process.env.DSH_REPO || '');
+if (!root || !existsSync(join(root, 'tools/dshx/src/client-build.js'))) throw new Error('Pass a prepared Harness checkout.');
 const packages = new Map();
 function walk(path, depth = 0) {
   if (depth > 4) return;
@@ -18,8 +18,18 @@ function link(name, target) {
   const destination = join(local, name);
   mkdirSync(dirname(destination), { recursive: true });
   if (existsSync(destination)) {
-    if (realpathSync(destination) !== realpathSync(target)) throw new Error(`Dependency mismatch: ${name}`);
-  } else symlinkSync(target, destination);
+    if (realpathSync(destination) === realpathSync(target)) return;
+    if (!lstatSync(destination).isSymbolicLink()) {
+      if (!name.startsWith('@deepseek-ai/')) {
+        console.log(`Keeping installed ${name}; it is not a symlink.`);
+        return;
+      }
+      rmSync(destination, { recursive: true, force: true });
+    } else {
+      rmSync(destination);
+    }
+  }
+  symlinkSync(target, destination);
 }
 const rootRequire = createRequire(join(root, 'package.json'));
 const uiRequire = createRequire(join(root, 'packages/client/ui-conversation/package.json'));
@@ -30,7 +40,13 @@ for (const name of Object.keys({ ...pkg.peerDependencies, ...pkg.devDependencies
   if (!target) for (const req of [rootRequire, uiRequire, webRequire]) {
     try { target = dirname(req.resolve(`${name}/package.json`)); break; } catch {}
   }
-  if (!target) throw new Error(`Cannot resolve ${name} in selected Harness`);
+  if (!target) {
+    if (existsSync(join(local, name))) {
+      console.log(`Keeping installed ${name}; selected Harness does not ship it.`);
+      continue;
+    }
+    throw new Error(`Cannot resolve ${name} in selected Harness`);
+  }
   link(name, target);
 }
 mkdirSync(join(local, '.bin'), { recursive: true });
